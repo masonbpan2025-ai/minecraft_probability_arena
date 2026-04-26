@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Probability Arena</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Top Left: Enemy -->
+        <div id="enemy-panel" class="panel">
+            <div class="panel-header">
+                <h2 id="enemy-name">Enemy Name</h2>
+                <div id="enemy-sprite" class="sprite"></div>
+            </div>
+            <div class="health-bar-container">
+                <div id="enemy-health-bar" class="health-bar enemy-health"></div>
+                <span id="enemy-health-text" class="health-text">100/100</span>
+            </div>
+            <div id="enemy-behavior" class="behavior-text">Behavior: ...</div>
+        </div>
+
+        <!-- Top Right: Player -->
+        <div id="player-panel" class="panel">
+            <div class="panel-header">
+                <h2>Player</h2>
+                <div class="inventory-stats">
+                    <span>🏹 <span id="arrow-count">10</span>/20</span>
+                    <span>🧪 <span id="potion-count">2</span>/5</span>
+                    <span>🔦 <span id="torch-count">3</span>/10</span>
+                </div>
+            </div>
+            <div class="bars-container">
+                <div class="health-bar-container">
+                    <div id="player-health-bar" class="health-bar player-health"></div>
+                    <span id="player-health-text" class="health-text">100/100 HP</span>
+                </div>
+                <div class="health-bar-container mp-bar-container">
+                    <div id="player-mp-bar" class="health-bar player-mp"></div>
+                    <span id="player-mp-text" class="health-text">50/50 MP</span>
+                </div>
+            </div>
+            <div class="active-items">
+                <h4>Active tactical buffs:</h4>
+                <ul id="active-item-list"><li>None</li></ul>
+            </div>
+            <div id="player-sprite" class="sprite player">🤺</div>
+        </div>
+
+        <!-- Center: Battle Log -->
+        <div id="battle-log-panel" class="panel log-panel">
+            <div class="log-header">
+                <div class="log-title-area">
+                    <h3>Battle Log</h3>
+                    <span class="neu-def">
+                        <strong class="tooltip-container">
+                            <a href="#" class="neu-link" onclick="event.preventDefault();">NEU (Net Expected Utility)</a>
+                            <div class="tooltip-content">
+                                <strong style="color:#facc15; font-size:0.9rem;">Resource Utility Conversion</strong><br>
+                                <span style="font-size:0.75rem; color:#cbd5e1;">To optimize choices mathematically, diverse resources must convert into a common "currency" (Utility). Since MP is rare and recovers slowly, spending 10 MP (20% of your max) is penalized heavily as <strong>-15 Utility Value</strong>. Contrastingly, Sword Durability is plentiful, costing only <strong>-2 Utility Value</strong>.</span><br><br>
+                                
+                                <strong style="color:#38bdf8; font-size:0.9rem;">Example 1: Fireball vs Spider</strong><br>
+                                • Spider is weak to Fireball (2.0x Dmg)<br>
+                                • Expected Dmg = 1.0 prob × 30 dmg × 2.0 weak = <span style="color:#4ade80">60</span><br>
+                                • Resource Cost = 10 MP = <span style="color:#f87171">-15 Utility</span><br>
+                                <strong style="font-size:0.9rem;">NEU = 60 - 15 = <span style="color:#4ade80">45.0</span> (Excellent)</strong><br><br>
+
+                                <strong style="color:#38bdf8; font-size:0.9rem;">Example 2: Fireball vs Enderman</strong><br>
+                                • Enderman resists Fireball (0.5x Dmg) & has a 30% dodge.<br>
+                                • Expected Dmg = 0.7 prob × 30 dmg × 0.5 resist = <span style="color:#4ade80">10.5</span><br>
+                                • Resource Cost = 10 MP = <span style="color:#f87171">-15 Utility</span><br>
+                                <strong style="font-size:0.9rem;">NEU = 10.5 - 15 = <span style="color:#f87171">-4.5</span> (Terrible, do not waste MP)</strong>
+                            </div>
+                        </strong> 
+                        = (Prob × Dmg × Element) - Resource Cost
+                    </span>
+                </div>
+                <label class="toggle-label">
+                    <input type="checkbox" id="edu-toggle" checked> AI Opt. (NEU)
+                </label>
+            </div>
+            <div id="battle-log"></div>
+        </div>
+
+        <!-- Bottom: Controls -->
+        <div id="controls-panel" class="panel controls-panel">
+            <div class="control-group">
+                <h3>Combat Actions</h3>
+                <div class="weapons">
+                    <button class="action-btn" onclick="game.playerAction('sword')" id="btn-sword">
+                        <span class="title">⚔️ Sword</span>
+                        <span class="desc">100% Hit | 10 Dmg</span>
+                        <span class="cost">Durability: <span id="sword-dur">30</span></span>
+                    </button>
+                    <button class="action-btn" onclick="game.playerAction('axe')" id="btn-axe">
+                        <span class="title">🪓 Axe</span>
+                        <span class="desc">50% Hit | 35 Dmg</span>
+                        <span class="cost">Durability: <span id="axe-dur">15</span></span>
+                    </button>
+                    <button class="action-btn" onclick="game.playerAction('bow')" id="btn-bow">
+                        <span class="title">🏹 Bow</span>
+                        <span class="desc">70% Hit | 25 Dmg</span>
+                        <span class="cost">Cost: 1 🏹</span>
+                    </button>
+                    <button class="action-btn magic-btn" onclick="game.playerAction('fireball')" id="btn-fireball">
+                        <span class="title">🔥 Fireball</span>
+                        <span class="desc">100% Hit | 30 Dmg</span>
+                        <span class="cost">Cost: 10 MP</span>
+                    </button>
+                    <button class="action-btn potion-btn" onclick="game.playerAction('potion')" id="btn-potion">
+                        <span class="title">🧪 Health Potion</span>
+                        <span class="desc">Heal +40 HP</span>
+                        <span class="cost">Cost: 1 🧪</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h3>Tactical Modifiers</h3>
+                <div class="items">
+                    <button class="item-btn" onclick="game.toggleItem('torch')" id="btn-torch">
+                        <span class="title">🔦 Torch (<span id="torch-btn-count">3</span>)</span>
+                        <span class="desc">Burns 1 per turn</span>
+                    </button>
+                    <button class="item-btn" onclick="game.toggleItem('shield')" id="btn-shield">
+                        <span class="title">🛡️ Shield (<span id="shield-dur">5</span> Dur)</span>
+                        <span class="desc">60% chance to block</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals for levels -->
+    <div id="modal-overlay" class="modal-overlay hidden">
+        <div class="modal">
+            <h2 id="modal-title">Level Complete!</h2>
+            <p id="modal-desc">You defeated the enemy.</p>
+            <div id="modal-loot" class="loot-text"></div>
+            <button class="action-btn" id="modal-btn" onclick="game.nextLevel()"><span class="title">Next Level</span></button>
+        </div>
+    </div>
+
+    <script src="probability.js"></script>
+    <script src="enemy.js"></script>
+    <script src="player.js"></script>
+    <script src="ui.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
